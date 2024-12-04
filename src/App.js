@@ -11,6 +11,10 @@ function App() {
   const animationRef = useRef(null);
   const [volume, setVolume] = useState(1);
   const [waveformData, setWaveformData] = useState(null);
+  const [slices, setSlices] = useState([
+    { id: "slice1", start: 10, end: 30, color: "red" },
+    { id: "slice2", start: 40, end: 60, color: "blue" },
+  ]);
 
   useEffect(() => {
     if (trackRef.current) return;
@@ -40,6 +44,10 @@ function App() {
     const canvas = canvasRef.current;
     if (!canvas || !waveformData) return;
 
+    const container = document.getElementById("canvasContainer");
+
+    canvas.width = container.clientWidth;
+
     const ctx = canvas.getContext("2d");
 
     const draw = () => {
@@ -61,8 +69,24 @@ function App() {
         const min = Math.min(...waveformData.slice(i * step, (i + 1) * step));
         const max = Math.max(...waveformData.slice(i * step, (i + 1) * step));
 
+        const currentTimePercent = i / canvas.width;
+        const matchingSlice = slices.find((slice) => {
+          const sliceStartPercent = slice.start / 100;
+          const sliceEndPercent = slice.end / 100;
+          return (
+            currentTimePercent >= sliceStartPercent &&
+            currentTimePercent <= sliceEndPercent
+          );
+        });
+
+        ctx.strokeStyle = matchingSlice
+          ? matchingSlice.color
+          : "rgb(100, 100, 100)";
+
+        ctx.beginPath();
         ctx.moveTo(i, canvas.height / 2 + min * amp);
         ctx.lineTo(i, canvas.height / 2 + max * amp);
+        ctx.stroke();
       }
 
       ctx.stroke();
@@ -95,50 +119,91 @@ function App() {
     };
   }, [canvasRef, waveformData, volume]);
 
+  function playSlice(start, end) {
+    if (audioContext.state === "suspended") {
+      audioContext.resume();
+    }
+
+    audioRef.current.currentTime = (start / 100) * audioRef.current.duration;
+    audioRef.current.play();
+    audioRef.current.addEventListener("timeupdate", function sliceEnd() {
+      if (
+        audioRef.current.currentTime >=
+        (end / 100) * audioRef.current.duration
+      ) {
+        audioRef.current.pause();
+        audioRef.current.removeEventListener("timeupdate", sliceEnd);
+      }
+    });
+  }
+
   return (
-    <div>
-      <div>
-        <canvas
-          ref={canvasRef}
-          width="800"
-          height="200"
-          className="border border-black"
-        ></canvas>
+    <div className="grid grid-cols-2">
+      <div className="bg-black p-16">
+        <audio ref={audioRef} src="/sample.wav"></audio>
+
+        <div className="flex items-center space-x-4 bg-white p-4 rounded-md shadow">
+          <input
+            type="range"
+            id="volume"
+            min="0"
+            max="4"
+            value={volume}
+            step="0.01"
+            onChange={(e) => {
+              setVolume(e.target.value);
+            }}
+            className="w-48 accent-indigo-500"
+          />
+        </div>
+
+        <div className="mt-8 flex flex-wrap gap-4">
+          <button
+            className="text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg px-6 py-3 font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
+            onClick={() => {
+              if (audioContext.state === "suspended") {
+                audioContext.resume();
+              }
+
+              if (audioContext.state === "running") {
+                audioContext.suspend();
+                audioRef.current.pause();
+              } else if (audioContext.state === "suspended") {
+                audioContext.resume();
+                audioRef.current.play();
+              }
+            }}
+          >
+            Play Track
+          </button>
+          {slices.map((slice) => (
+            <button
+              key={slice.id}
+              className="text-white bg-purple-500 hover:bg-purple-600 rounded-lg px-6 py-3 font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
+              onClick={() => playSlice(slice.start, slice.end)}
+            >
+              Play Slice {slice.start}-{slice.end}
+            </button>
+          ))}
+        </div>
       </div>
-
-      <audio ref={audioRef} src="/sample.wav"></audio>
-
-      <input
-        type="range"
-        id="volume"
-        min="0"
-        max="4"
-        value={volume}
-        step="0.01"
-        onChange={(e) => {
-          setVolume(e.target.value);
-        }}
-      />
-
-      <div>volume {volume}</div>
-
-      <button
-        onClick={() => {
-          if (audioContext.state === "suspended") {
-            audioContext.resume();
-          }
-
-          if (audioContext.state === "running") {
-            audioContext.suspend();
-            audioRef.current.pause();
-          } else if (audioContext.state === "suspended") {
-            audioContext.resume();
-            audioRef.current.play();
-          }
-        }}
-      >
-        Play/Pause
-      </button>
+      <div className="bg-black p-16">
+        <div id="canvasContainer">
+          <canvas
+            ref={canvasRef}
+            width="800"
+            height="100"
+            className="border border-black"
+          ></canvas>
+        </div>
+        <div className="text-white text-center mt-8">
+          <h2 className="font-bold text-xl">OLD TOWN</h2>
+          <p>
+            by <span className="font-bold">Igloo</span>
+          </p>
+          <p className="text-sm">(2012)</p>
+        </div>
+      </div>
     </div>
   );
 }
