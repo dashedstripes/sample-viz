@@ -1,3 +1,4 @@
+import { Timeline } from "./Timeline";
 import Track from "./Track";
 
 const tracks = [
@@ -23,6 +24,7 @@ const tracks = [
 function App() {
   return (
     <div>
+      <Timeline />
       {tracks.map((track) => (
         <Track
           key={track.id}
