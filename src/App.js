@@ -29,19 +29,20 @@ function App() {
     track2: {
       id: "track2",
       artist: "Igloo",
-      title: "OLD TOWN",
+      title: "DUST",
       year: 2012,
       volume: 1,
       sample: "/sample.wav",
       context: new AudioContext(),
       waveform: [],
       trackRef: null,
-      slices: [{ id: "slice1", start: 60, end: 90, color: "red", data: [] }],
+      slices: [{ id: "slice3", start: 60, end: 90, color: "red", data: [] }],
     },
   });
 
   const [sequence, setSequence] = useState({
-    track1: ["slice1", "slice2"],
+    track1: ["slice1", "slice2", "slice1"],
+    track2: ["slice3"],
   });
 
   useEffect(() => {
@@ -69,9 +70,7 @@ function App() {
     Object.values(tracks).forEach((track) => {
       getAudioData(track.id);
     });
-  }, [tracks]);
 
-  useEffect(() => {
     // Set up audio event listeners
     Object.values(tracks).forEach((track) => {
       const audio = document.getElementById(track.id);
@@ -96,7 +95,8 @@ function App() {
         }));
       });
     });
-  }, [tracks]);
+    // it thinks it wants tracks here, but that causes infinite loop so nah
+  }, []);
 
   async function playSequence() {
     for (const clipId of sequence.track1) {
