@@ -17,7 +17,7 @@ const tracks = [
 
 export function Timeline() {
   return (
-    <div className="outline p-16">
+    <div>
       <button>Play</button>
       {tracks.map((track) => (
         <div className="bg-slate-600 p-4 flex gap-4 items-center">
