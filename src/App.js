@@ -41,8 +41,12 @@ function App() {
   });
 
   const [sequence, setSequence] = useState({
-    track1: ["slice1", "slice2", "slice1"],
-    track2: ["slice3"],
+    track1: [
+      { clipId: "clip1", sliceId: "slice1" },
+      { clipId: "clip2", sliceId: "slice2" },
+      { clipId: "clip3", sliceId: "slice1" },
+    ],
+    track2: [{ clipId: "clip4", sliceId: "slice3" }],
   });
 
   useEffect(() => {
@@ -99,46 +103,93 @@ function App() {
   }, []);
 
   async function playSequence() {
-    for (const clipId of sequence.track1) {
-      if (clipId === null) {
-        continue;
-      }
+    // Get the longest track length
+    const maxLength = Math.max(
+      ...Object.values(sequence).map((track) => track.length),
+    );
 
-      const track = tracks.track1;
-      const slice = track.slices.find((slice) => slice.id === clipId);
+    for (let i = 0; i < maxLength; i++) {
+      // Start all tracks that have a clip at this position
+      const playPromises = Object.entries(sequence).map(
+        ([trackId, trackSequence]) => {
+          const clip = trackSequence[i];
+          if (!clip) return Promise.resolve();
 
-      const audioRef = document.getElementById(track.id);
-      if (!track.trackRef) {
-        // Only create and connect once
-        const trackRef = track.context.createMediaElementSource(audioRef);
-        trackRef.connect(track.context.destination);
-        track.trackRef = trackRef;
-      }
+          const track = tracks[trackId];
+          const slice = track.slices.find((slice) => slice.id === clip.sliceId);
 
-      if (track.context === "suspended") {
-        track.context.resume();
-      }
-
-      audioRef.currentTime = (slice.start / 100) * audioRef.duration;
-      audioRef.play();
-
-      await new Promise((resolve) => {
-        function sliceEnd() {
-          if (audioRef.currentTime >= (slice.end / 100) * audioRef.duration) {
-            audioRef.pause();
-            audioRef.removeEventListener("timeupdate", sliceEnd);
-            resolve();
+          const audioRef = document.getElementById(track.id);
+          if (!track.trackRef) {
+            const trackRef = track.context.createMediaElementSource(audioRef);
+            trackRef.connect(track.context.destination);
+            track.trackRef = trackRef;
           }
-        }
-        audioRef.addEventListener("timeupdate", sliceEnd);
-      });
+
+          if (track.context === "suspended") {
+            track.context.resume();
+          }
+
+          audioRef.currentTime = (slice.start / 100) * audioRef.duration;
+          audioRef.play();
+
+          return new Promise((resolve) => {
+            function sliceEnd() {
+              if (
+                audioRef.currentTime >=
+                (slice.end / 100) * audioRef.duration
+              ) {
+                audioRef.pause();
+                audioRef.removeEventListener("timeupdate", sliceEnd);
+                resolve();
+              }
+            }
+            audioRef.addEventListener("timeupdate", sliceEnd);
+          });
+        },
+      );
+
+      // Wait for all tracks to finish their current slice before moving to next position
+      await Promise.all(playPromises);
     }
+  }
+
+  function playSlice(sliceId) {
+    console.log(sliceId);
+    const track = Object.values(tracks).find((track) =>
+      track.slices.some((slice) => slice.id === sliceId),
+    );
+
+    console.log(track);
+
+    const slice = track.slices.find((slice) => slice.id === sliceId);
+    const audioRef = document.getElementById(track.id);
+
+    if (!track.trackRef) {
+      const trackRef = track.context.createMediaElementSource(audioRef);
+      trackRef.connect(track.context.destination);
+      track.trackRef = trackRef;
+    }
+
+    if (track.context === "suspended") {
+      track.context.resume();
+    }
+
+    audioRef.currentTime = (slice.start / 100) * audioRef.duration;
+    audioRef.play();
+
+    function sliceEnd() {
+      if (audioRef.currentTime >= (slice.end / 100) * audioRef.duration) {
+        audioRef.pause();
+        audioRef.removeEventListener("timeupdate", sliceEnd);
+      }
+    }
+
+    audioRef.addEventListener("timeupdate", sliceEnd);
   }
 
   return (
     <div className="h-screen">
-      <div className="container mx-auto p-8">
-        <h1 className="font-bold text-2xl mb-8">SAMPLE VIZ</h1>
+      <div className="container mx-auto p-8 w-[65ch]">
         <div className="flex flex-col gap-16">
           {Object.values(tracks).map((track) => (
             <div key={track.id} className="">
@@ -164,6 +215,9 @@ function App() {
           tracks={tracks}
           onPlayPressed={() => {
             playSequence();
+          }}
+          onClipClicked={(sliceId) => {
+            playSlice(sliceId);
           }}
         />
       </div>
