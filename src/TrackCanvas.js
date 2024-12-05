@@ -1,12 +1,6 @@
 import { useEffect, useRef } from "react";
 
-export default function TrackCanvas({
-  trackId,
-  waveform,
-  slices,
-  volume = 1,
-  playhead = 0,
-}) {
+export default function TrackCanvas({ trackId, waveform, slices, volume = 1 }) {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
   const audioRef = document.getElementById(trackId);

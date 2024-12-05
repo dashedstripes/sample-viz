@@ -17,11 +17,10 @@ function App() {
       title: "OLD TOWN",
       year: 2012,
       volume: 1,
-      playhead: 0,
       sample: "/sample.wav",
       context: new AudioContext(),
       waveform: [],
-      ref: null,
+      trackRef: null,
       slices: [
         { id: "slice1", start: 10, end: 30, color: "#a8eb57", data: [] },
         { id: "slice2", start: 40, end: 60, color: "#b057eb", data: [] },
@@ -33,16 +32,16 @@ function App() {
       title: "OLD TOWN",
       year: 2012,
       volume: 1,
-      playhead: 0,
       sample: "/sample.wav",
       context: new AudioContext(),
       waveform: [],
+      trackRef: null,
       slices: [{ id: "slice1", start: 60, end: 90, color: "red", data: [] }],
     },
   });
 
   const [sequence, setSequence] = useState({
-    track1: ["slice1"],
+    track1: ["slice1", "slice2"],
   });
 
   useEffect(() => {
@@ -99,34 +98,48 @@ function App() {
     });
   }, [tracks]);
 
-  function playSequence() {
-    sequence.track1.forEach((clipId, index) => {
+  async function playSequence() {
+    for (const clipId of sequence.track1) {
       if (clipId === null) {
-        return;
+        continue;
       }
 
       const track = tracks.track1;
       const slice = track.slices.find((slice) => slice.id === clipId);
 
-      const audio = document.getElementById(track.id);
-      audio.currentTime = slice.start / 100;
-      audio.play();
+      const audioRef = document.getElementById(track.id);
+      if (!track.trackRef) {
+        // Only create and connect once
+        const trackRef = track.context.createMediaElementSource(audioRef);
+        trackRef.connect(track.context.destination);
+        track.trackRef = trackRef;
+      }
 
-      setTracks((prevTracks) => ({
-        ...prevTracks,
-        track1: {
-          ...prevTracks.track1,
-          playhead: slice.start,
-        },
-      }));
-    });
+      if (track.context === "suspended") {
+        track.context.resume();
+      }
+
+      audioRef.currentTime = (slice.start / 100) * audioRef.duration;
+      audioRef.play();
+
+      await new Promise((resolve) => {
+        function sliceEnd() {
+          if (audioRef.currentTime >= (slice.end / 100) * audioRef.duration) {
+            audioRef.pause();
+            audioRef.removeEventListener("timeupdate", sliceEnd);
+            resolve();
+          }
+        }
+        audioRef.addEventListener("timeupdate", sliceEnd);
+      });
+    }
   }
 
   return (
     <div className="h-screen">
       <div className="container mx-auto p-8">
         <h1 className="font-bold text-2xl mb-8">SAMPLE VIZ</h1>
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-16">
           {Object.values(tracks).map((track) => (
             <div key={track.id} className="">
               <TrackCanvas
@@ -134,8 +147,12 @@ function App() {
                 waveform={track.waveform}
                 slices={track.slices}
                 volume={track.volume}
-                playhead={track.playhead}
               />
+              <div className="text-center mt-8">
+                <h2 className="font-bold text-xl">{track.title}</h2>
+                <h3>{track.artist}</h3>
+                <h4>({track.year})</h4>
+              </div>
               <audio id={track.id} src={track.sample}></audio>
             </div>
           ))}

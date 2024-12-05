@@ -27,7 +27,7 @@ export function Timeline({ sequence, tracks, onPlayPressed }) {
       {Object.values(sequence).map((clips) => (
         <div key={clips} className="bg-slate-600 p-4 grid grid-cols-4 gap-8">
           {clips.map((clip) => (
-            <div className="bg-red-200 p-4 rounded" key={clip}>
+            <div className="bg-blue-400 p-4 rounded" key={clip}>
               {clip}
             </div>
           ))}
