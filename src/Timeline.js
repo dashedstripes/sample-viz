@@ -1,36 +1,35 @@
-const tracks = [
-  {
-    id: "track1",
-    clips: [
-      { start: 0, end: 40, color: "red" },
-      { start: 60, end: 90, color: "blue" },
-    ],
-  },
-  {
-    id: "track2",
-    clips: [
-      { start: 0, end: 40, color: "green" },
-      { start: 60, end: 80, color: "green" },
-    ],
-  },
-];
+import { useEffect, useState } from "react";
 
-export function Timeline() {
+export function Timeline({ sequence, tracks, onPlayPressed }) {
+  const [sequenceTracks, setSequenceTracks] = useState([]);
+
+  useEffect(() => {
+    let newSequenceTracks = [];
+    for (const [trackId, sequenceClips] of Object.entries(sequence)) {
+      const track = tracks[trackId];
+      const clips = sequenceClips.map((clipId) => {
+        if (clipId === null) {
+          return null;
+        }
+
+        return track.slices.find((slice) => slice.id === clipId);
+      });
+
+      newSequenceTracks.push(clips);
+    }
+
+    setSequenceTracks(newSequenceTracks);
+  }, [sequence, tracks]);
+
   return (
     <div>
-      <button>Play</button>
-      {tracks.map((track) => (
-        <div className="bg-slate-600 p-4 flex gap-4 items-center">
-          <p>{track.id}</p>
-          {track.clips.map((clip) => (
-            <div
-              key={clip.start}
-              className="outline h-8"
-              style={{
-                width: `${clip.end - clip.start}px`,
-                backgroundColor: clip.color,
-              }}
-            ></div>
+      <button onClick={() => onPlayPressed()}>Play</button>
+      {Object.values(sequence).map((clips) => (
+        <div key={clips} className="bg-slate-600 p-4 grid grid-cols-4 gap-8">
+          {clips.map((clip) => (
+            <div className="bg-red-200 p-4 rounded" key={clip}>
+              {clip}
+            </div>
           ))}
         </div>
       ))}

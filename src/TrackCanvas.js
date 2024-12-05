@@ -1,8 +1,15 @@
 import { useEffect, useRef } from "react";
 
-export default function TrackCanvas({ waveform, slices, volume = 1 }) {
+export default function TrackCanvas({
+  trackId,
+  waveform,
+  slices,
+  volume = 1,
+  playhead = 0,
+}) {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
+  const audioRef = document.getElementById(trackId);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -55,25 +62,24 @@ export default function TrackCanvas({ waveform, slices, volume = 1 }) {
 
       ctx.stroke();
 
-      // // Draw playhead
-      // if (audioRef.current) {
-      //   const playheadX =
-      //     (audioRef.current.currentTime / audioRef.current.duration) *
-      //     canvas.width;
+      // Draw playhead
+      if (audioRef) {
+        const playheadX =
+          (audioRef.currentTime / audioRef.duration) * canvas.width;
 
-      //   // Draw current slice in red
-      //   const step = Math.ceil(waveform.length / canvas.width);
-      //   const amp = (canvas.height / 2) * volume;
-      //   const index = Math.floor(playheadX * step);
+        // Draw current slice in red
+        const step = Math.ceil(waveform.length / canvas.width);
+        const amp = (canvas.height / 2) * volume;
+        const index = Math.floor(playheadX * step);
 
-      //   ctx.strokeStyle = "rgb(255, 255, 255)";
-      //   ctx.beginPath();
-      //   const min = Math.min(...waveform.slice(index, index + step));
-      //   const max = Math.max(...waveform.slice(index, index + step));
-      //   ctx.moveTo(playheadX, canvas.height / 2 + min * amp);
-      //   ctx.lineTo(playheadX, canvas.height / 2 + max * amp);
-      //   ctx.stroke();
-      // }
+        ctx.strokeStyle = "rgb(255, 255, 255)";
+        ctx.beginPath();
+        const min = Math.min(...waveform.slice(index, index + step));
+        const max = Math.max(...waveform.slice(index, index + step));
+        ctx.moveTo(playheadX, canvas.height / 2 + min * amp);
+        ctx.lineTo(playheadX, canvas.height / 2 + max * amp);
+        ctx.stroke();
+      }
     };
 
     draw();
