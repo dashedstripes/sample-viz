@@ -154,12 +154,9 @@ function App() {
   }
 
   function playSlice(sliceId) {
-    console.log(sliceId);
     const track = Object.values(tracks).find((track) =>
       track.slices.some((slice) => slice.id === sliceId),
     );
-
-    console.log(track);
 
     const slice = track.slices.find((slice) => slice.id === sliceId);
     const audioRef = document.getElementById(track.id);
@@ -209,7 +206,7 @@ function App() {
           ))}
         </div>
       </div>
-      <div className="fixed bottom-0 left-0 right-0 p-8">
+      <div className="fixed bottom-0 left-0 right-0">
         <Timeline
           sequence={sequence}
           tracks={tracks}
