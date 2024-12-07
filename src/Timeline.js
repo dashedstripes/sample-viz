@@ -24,7 +24,7 @@ export function Timeline({ sequence, tracks, onPlayPressed, onClipClicked }) {
           </div>
           <button
             onClick={() => onPlayPressed()}
-            className="bg-white w-full text-black hover:scale-105 px-6 py-3 rounded-lg font-semibold shadow-lg transition-colors"
+            className="bg-white w-full text-black hover:scale-105 px-6 py-3 rounded-lg font-semibold shadow-lg transition-all"
           >
             Play
           </button>
